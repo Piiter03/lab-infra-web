@@ -1,11 +1,11 @@
-# Fedora - Puesto de trabajo (Control Node)
+# ws - Puesto de trabajo (Control Node)
 
 ## Función
 
 Máquina desde la que se administra todo el laboratorio: acceso por SSH a
-VM1, VM2 y VM3, y punto desde donde se ejecutarán Ansible y Terraform. No
-forma parte de la infraestructura web en sí, sino que es el "puesto de
-sysadmin" del proyecto.
+las VMs de servidor (VM1 a VM5), y punto desde donde se ejecutarán Ansible y
+Terraform. No forma parte de la infraestructura web en sí, sino que es el
+"puesto de sysadmin" del proyecto.
 
 ## Especificaciones
 
@@ -19,25 +19,30 @@ sysadmin" del proyecto.
 
 ## Red
 
-| Adaptador | Tipo | IP |
-|---|---|---|
-| 1 | NAT | asignada por DHCP (salida a internet) |
-| 2 | Host-only (VMnet1) | 192.168.56.10/24 |
+| Adaptador | Tipo | Interfaz | IP |
+|---|---|---|---|
+| 1 | NAT | `ens224` (conexión `Wired connection 1`) | asignada por DHCP (salida a internet) |
+| 2 | Host-only (VMnet1) | `ens160` (conexión `host-only`) | 192.168.56.10/24 |
 
 Configurada con NetworkManager:
 ```bash
-sudo nmcli connection add type ethernet ifname ens37 con-name host-only \
+sudo nmcli connection add type ethernet ifname ens160 con-name host-only \
   ipv4.method manual ipv4.addresses 192.168.56.10/24
 sudo nmcli connection up host-only
 ```
 
-Resolución de nombres de las demás máquinas añadida en `/etc/hosts`:
+DNS: usa el DNS interno de VM5 (ver `docs/vm5-dns.md`):
+```bash
+sudo nmcli connection modify "Wired connection 1" ipv4.ignore-auto-dns yes
+sudo nmcli connection modify host-only ipv4.dns 192.168.56.15
+sudo nmcli connection up "Wired connection 1"
+sudo nmcli connection up host-only
+resolvectl status
 ```
-192.168.56.10 ws
-192.168.56.11 vm1-proxy
-192.168.56.12 vm2-app
-192.168.56.13 vm3-mon
-```
+
+Ya no hay entradas del laboratorio en `/etc/hosts`: todos los nombres
+(`vm1-proxy`, `vm2-app`, `vm3-mon`, `vm4-db`, `vm5-dns`) se resuelven por
+DNS.
 
 ## Software instalado
 
@@ -48,6 +53,7 @@ Resolución de nombres de las demás máquinas añadida en `/etc/hosts`:
 - `tmux`
 - `bash-completion`
 - `ansible`
+- `bind-utils` (para `dig`)
 - `open-vm-tools`, `open-vm-tools-desktop`
 - *(pendiente: Terraform, Docker CLI, Azure CLI, VS Code)*
 
@@ -79,12 +85,16 @@ Resolución de nombres de las demás máquinas añadida en `/etc/hosts`:
    a este punto si algo se rompe más adelante.
 8. Añadido un segundo adaptador de red (Host-only, VMnet1) y configurada su
    IP fija con NetworkManager (ver sección **Red**).
-9. Copiada la clave SSH pública a VM1, VM2 y VM3:
+9. Copiada la clave SSH pública a las VMs de servidor:
    ```bash
    ssh-copy-id usuario@vm1-proxy
    ssh-copy-id usuario@vm2-app
    ssh-copy-id usuario@vm3-mon
+   ssh-copy-id usuario@vm4-db
+   ssh-copy-id usuario@vm5-dns
    ```
+10. Migración al DNS interno (VM5) y eliminación de las entradas del
+    laboratorio de `/etc/hosts`.
 
 ## Pendiente
 
@@ -95,6 +105,6 @@ Resolución de nombres de las demás máquinas añadida en `/etc/hosts`:
 
 ## Problemas encontrados
 
-## Problemas encontrados
-
-...
+- Con el DNS interno, `ws` depende de VM5 para resolver los nombres del
+  laboratorio. Si VM5 está apagada, el acceso por nombre falla, aunque el
+  acceso por IP sigue funcionando.

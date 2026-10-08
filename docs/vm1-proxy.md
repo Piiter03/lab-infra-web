@@ -18,29 +18,47 @@ certificado HTTPS de cara al usuario.
 
 ## Red
 
-| Adaptador | Tipo | IP |
-|---|---|---|
-| 1 | NAT | asignada por DHCP (salida a internet) |
-| 2 | Host-only (VMnet1) | 192.168.56.11/24 |
+| Adaptador | Tipo | Interfaz | IP |
+|---|---|---|---|
+| 1 | NAT | `ens37` | asignada por DHCP (salida a internet) |
+| 2 | Host-only (VMnet1) | `ens33` | 192.168.56.11/24 |
 
-Configurada con netplan (`/etc/netplan/50-cloud-init.yaml`):
+Configurada con netplan (`/etc/netplan/50-cloud-init.yaml`). La interfaz
+NAT no aporta DNS (`use-dns: false`) y la host-only apunta al DNS interno
+de VM5:
 ```yaml
 network:
   version: 2
   ethernets:
-    ens33:
-      dhcp4: true
     ens37:
+      dhcp4: true
+      dhcp4-overrides:
+        use-dns: false
+    ens33:
       dhcp4: false
       addresses: [192.168.56.11/24]
+      nameservers:
+        addresses: [192.168.56.15]
 ```
 ```bash
-sudo netplan apply
+sudo netplan try
 ```
 
-Resolución de nombres de las demás máquinas añadida en `/etc/hosts`.
-Acceso por SSH sin contraseña desde la Fedora (clave pública copiada con
-`ssh-copy-id`).
+`netplan try` aplica la configuración y la revierte sola si no se confirma,
+lo que evita quedarse sin red por un error de edición.
+
+Además, `systemd-resolved` necesita permitir nombres de una sola etiqueta
+(ver **Problemas encontrados**):
+```
+# /etc/systemd/resolved.conf.d/lab.conf
+[Resolve]
+ResolveUnicastSingleLabel=yes
+```
+
+La resolución de nombres de las demás máquinas la hace el DNS interno
+(ver `docs/vm5-dns.md`); ya no hay entradas del laboratorio en
+`/etc/hosts`. Acceso por SSH sin contraseña desde `ws` (clave pública
+copiada con `ssh-copy-id`).
 
 ## Software instalado
 
@@ -92,7 +110,11 @@ server {
 
 El proxy redirige todo el tráfico HTTP (puerto 80) a HTTPS (puerto 443), y
 reenvía las peticiones a WordPress, que corre en Docker en VM2
-(`vm2-app:8080`).
+(`vm2-app:8080`). Nginx resuelve `vm2-app` al cargar la configuración, así
+que tras cambiar el DNS conviene validar y recargar:
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
 
 ## Monitorización
 
@@ -133,7 +155,7 @@ curl -s localhost:9100/metrics | head
    sudo nginx -t
    sudo systemctl reload nginx
    ```
-7. Verificación del flujo completo desde la Fedora:
+7. Verificación del flujo completo desde `ws`:
    ```bash
    curl -Ik https://vm1-proxy
    ```
@@ -143,6 +165,9 @@ curl -s localhost:9100/metrics | head
    respuesta de WordPress.
 8. Instalación de `prometheus-node-exporter` y apertura del puerto 9100 en
    `ufw` para que Prometheus (VM3) pueda monitorizarla.
+9. Migración al DNS interno (VM5): cambio de Netplan, ajuste de
+   `systemd-resolved` y eliminación de las entradas del laboratorio en
+   `/etc/hosts`.
 
 ## Pendiente
 
@@ -155,7 +180,17 @@ curl -s localhost:9100/metrics | head
   dejando la máquina sin salida a internet. Se solucionó revisando con
   `ip a` / `ip route` cuál era cada interfaz y corrigiendo la asignación en
   netplan.
+- **Al pasar al DNS interno, `vm4-db` no se resolvía** aunque Netplan y
+  `resolvectl status` mostraban el DNS correcto. `resolvectl query vm4-db`
+  devolvía `No appropriate name servers or networks for name found`.
+  `systemd-resolved` no reenvía a un DNS externo los nombres de una sola
+  etiqueta (sin punto) salvo que se active `ResolveUnicastSingleLabel=yes`.
+  Se añadió esa opción en `/etc/systemd/resolved.conf.d/lab.conf`, se
+  reinició `systemd-resolved` y se vació la caché con
+  `resolvectl flush-caches`.
 
 ## Capturas
 
 ![Respuesta del proxy mostrando el flujo completo hacia WordPress](img/vm1-curl-proxy.png)
+![Error de systemd-resolved con nombres de una sola etiqueta](img/vm1-resolved-error.png)
+![Resolución correcta de vm4-db tras activar ResolveUnicastSingleLabel](img/vm1-resolved-ok.png)

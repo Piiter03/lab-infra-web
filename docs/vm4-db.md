@@ -24,19 +24,29 @@ arquitectura de 3 capas (cada capa en su propio servidor).
 
 ## Red
 
-| Adaptador | Tipo | IP |
-|---|---|---|
-| 1 | NAT | asignada por DHCP (salida a internet) |
-| 2 | Host-only (VMnet1) | 192.168.56.14/24 |
+| Adaptador | Tipo | Interfaz | IP |
+|---|---|---|---|
+| 1 | NAT | `ens160` | asignada por DHCP (salida a internet) |
+| 2 | Host-only (VMnet1) | `ens224` (conexión `host-only`) | 192.168.56.14/24 |
 
-Resolución de nombres de las demás máquinas añadida en `/etc/hosts`.
-Acceso por SSH sin contraseña desde la Fedora.
+DNS: usa el DNS interno de VM5 (ver `docs/vm5-dns.md`):
+```bash
+sudo nmcli connection modify "ens160" ipv4.ignore-auto-dns yes
+sudo nmcli connection modify "host-only" ipv4.dns 192.168.56.15
+sudo nmcli connection up "ens160"
+sudo nmcli connection up "host-only"
+cat /etc/resolv.conf   # nameserver 192.168.56.15
+```
+
+Ya no hay entradas del laboratorio en `/etc/hosts`. Acceso por SSH sin
+contraseña desde `ws`.
 
 ## Software instalado
 
 - `docker-ce`, `docker-ce-cli`, `containerd.io`, `docker-compose-plugin`
 - `node_exporter` (binario oficial, con servicio systemd propio)
 - `epel-release`
+- `bind-utils` (para `dig`)
 - `open-vm-tools`
 - Herramientas base: `vim`, `curl`, `wget`, `htop`, `tmux`, `bash-completion`
 
@@ -91,7 +101,7 @@ vigilado por Prometheus desde VM3 (job `vm4-db`).
 1. Creación de la VM (Rocky Linux, Minimal Install) e instalación de
    Docker desde el repositorio oficial.
 2. Configuración de red (NAT + host-only con IP fija) y acceso SSH desde
-   la Fedora.
+   `ws`.
 3. Activación del firewall con las reglas de la sección **Seguridad**.
 4. Despliegue del contenedor de MariaDB con `docker compose up -d`.
 5. Verificación de conectividad desde VM2:
@@ -101,6 +111,9 @@ vigilado por Prometheus desde VM3 (job `vm4-db`).
 6. Reconfiguración de VM2 para apuntar su WordPress a esta base de datos
    (ver `docs/vm2-app.md`).
 7. Instalación de `node_exporter` y apertura del puerto 9100.
+8. Migración al DNS interno (VM5) con `nmcli`, comprobando que resuelve
+   `vm2-app` por DNS con su entrada de `/etc/hosts` comentada y que
+   `wp_db` sigue en marcha.
 
 ## Pendiente
 
@@ -121,3 +134,5 @@ vigilado por Prometheus desde VM3 (job `vm4-db`).
   adaptadores.
 
 ## Capturas
+
+![Contenedor wp_db en ejecución](img/vm4-docker-ps.png)
