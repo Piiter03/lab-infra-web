@@ -1,0 +1,18 @@
+# Secretos y copias con credenciales
+ansible/group_vars/lab/vault.yml
+.vault_pass*
+.env
+.env.*
+*~
+*.bak
+*.sql
+
+# Scripts temporales de diagnóstico
+compara-env.py
+rota-vault.py
+
+# Claves
+*.key
+*.pem
+id_ed25519*
+id_rsa*
