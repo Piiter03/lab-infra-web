@@ -100,7 +100,7 @@ interna del laboratorio).
 
 ## Documentación por máquina
 
-- [ws - Puesto de trabajo](docs/workstation-ws.md)
+- [WS - Puesto de trabajo](docs/workstation-fedora.md)
 - [VM1 - Proxy Nginx](docs/vm1-proxy.md)
 - [VM2 - Aplicación (WordPress)](docs/vm2-app.md)
 - [VM3 - Monitorización](docs/vm3-monitorizacion.md)
