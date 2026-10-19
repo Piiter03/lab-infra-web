@@ -35,7 +35,7 @@ flowchart LR
 
     subgraph INF [Infraestructura transversal]
         M[VM3 · vm3-mon<br/>Prometheus + Grafana]
-        N[VM5 · vm5-dns<br/>dnsmasq]
+        N[VM5 · vm5-dns<br/>dnsmasq<br/>DNS de todas las VMs]
     end
 
     P -. node_exporter .-> M
@@ -43,10 +43,6 @@ flowchart LR
     D -. node_exporter .-> M
     N -. node_exporter .-> M
 
-    N -. resuelve nombres .-> P
-    N -. resuelve nombres .-> A
-    N -. resuelve nombres .-> D
-    N -. resuelve nombres .-> M
 ```
 
 **Las 3 capas reales:**
@@ -82,7 +78,8 @@ interna del laboratorio).
 - **DNS interno:** dnsmasq
 - **Seguridad:** SELinux (Rocky), firewalld/ufw
 - **Red:** red interna host-only con IPs fijas y resolución por DNS interno
-- **Próximamente:** Ansible (automatización), Terraform (despliegue en Azure)
+- **Automatización:** Ansible (base, DNS, node_exporter, Docker y despliegue de aplicaciones con Vault)
+- **Próximamente:** Terraform (despliegue en Azure)
 
 ## Estado del proyecto
 
@@ -96,7 +93,9 @@ interna del laboratorio).
 - [x] node_exporter en VM1, VM2, VM4 y VM5, monitorizadas desde VM3
 - [x] Dashboard de Grafana con métricas de las máquinas
 - [x] DNS interno (VM5) y migración de todos los clientes
-- [ ] Automatización con Ansible
+- [x] Ansible: inventario, configuración base, servidor DNS y node_exporter en las 5 VMs
+- [x] Ansible: Docker y despliegue de WordPress y MariaDB con credenciales en Vault
+- [ ] Ansible: cliente DNS, Nginx y Prometheus como roles
 - [ ] Despliegue en Azure con Terraform
 
 ## Documentación por máquina
@@ -107,6 +106,7 @@ interna del laboratorio).
 - [VM3 - Monitorización](docs/vm3-monitorizacion.md)
 - [VM4 - Base de datos](docs/vm4-db.md)
 - [VM5 - DNS interno](docs/vm5-dns.md)
+- [Automatización con Ansible](docs/ansible.md)
 
 ## Lo que he aprendido
 
@@ -119,6 +119,8 @@ interna del laboratorio).
 - Gestión de zonas y `sources` en firewalld (un mismo origen no puede pertenecer a dos zonas a la vez).
 - Despliegue de Prometheus y Grafana para monitorización multi-máquina, incluyendo la instalación manual de `node_exporter` por binario en distros que no lo traen en sus repositorios, y la depuración de un `prometheus.yml` inválido. De ahí salió el hábito de **validar antes de reiniciar** (`promtool check config`, `nginx -t`, `dnsmasq --test`, `netplan try`).
 - Montaje de un DNS interno con dnsmasq y migración de clientes con cuatro métodos distintos. En Ubuntu, `systemd-resolved` **no reenvía los nombres de una sola etiqueta** a un DNS externo salvo que se active `ResolveUnicastSingleLabel=yes`.
+- Automatización con Ansible: roles, plantillas, *handlers*, simulacro (`--check --diff`) e idempotencia, y credenciales con **Ansible Vault**. Un fallo real enseñó que un simulacro limpio no lo garantiza todo (el módulo de Compose no ve un `.env` que aún no se ha escrito), y que un `.env` con variables desplazadas puede pasar meses sin detectarse porque MariaDB solo lo lee al crear la base de datos.
+- Dependencias de arranque: con el DNS interno, Nginx fallaba al iniciar (`host not found in upstream`) porque resuelve el destino solo al cargar la configuración. Se arregló con un *drop-in* de systemd.
 - Valoración de dependencias de infraestructura: el DNS interno es un punto único de fallo, y se decidió separarlo de la monitorización para evitar una dependencia circular.
 
 ## Capturas
@@ -144,6 +146,6 @@ interna del laboratorio).
 
 ## Autor
 
-Pedro Morales — Sistemas y Cloud
+Pedro Morales — en proceso de formación en sistemas y cloud (ASIR, AZ-900)
 
-[LinkedIn](https://www.linkedin.com/in/pedro-morales03/) · [GitHub](https://github.com/Piiter03) · [WEB](https://pedro-morales.es)
+[LinkedIn](https://www.linkedin.com/in/pedro-morales03/) · [GitHub](https://github.com/Piiter03)

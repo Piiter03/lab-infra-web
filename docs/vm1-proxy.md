@@ -171,7 +171,8 @@ curl -s localhost:9100/metrics | head
 
 ## Pendiente
 
-- [ ] Sustituir el certificado autofirmado por uno de Let's Encrypt.
+- [ ] Sustituir el certificado autofirmado por uno de Let's Encrypt si se
+      dispone de un dominio.
 
 ## Problemas encontrados
 
@@ -188,6 +189,31 @@ curl -s localhost:9100/metrics | head
   Se añadió esa opción en `/etc/systemd/resolved.conf.d/lab.conf`, se
   reinició `systemd-resolved` y se vació la caché con
   `resolvectl flush-caches`.
+
+- **Nginx no arrancaba tras reiniciar la máquina.** Tras un reinicio el
+  sitio estaba caído y `systemctl status nginx` mostraba
+  `host not found in upstream "vm2-app"`. Nginx resuelve el nombre del
+  servidor de destino solo al cargar la configuración, y en el arranque la
+  red y el DNS aún no estaban listos, así que fallaba y no volvía a
+  intentarlo. Se arregló con un *drop-in* de systemd que espera a la red y
+  reintenta:
+  ```ini
+  # /etc/systemd/system/nginx.service.d/espera-dns.conf
+  [Unit]
+  After=network-online.target nss-lookup.target
+  Wants=network-online.target
+  StartLimitIntervalSec=0
+
+  [Service]
+  Restart=on-failure
+  RestartSec=5
+  ```
+  ```bash
+  sudo systemctl daemon-reload
+  sudo systemctl restart nginx
+  ```
+  Este fallo no existía cuando los nombres estaban en `/etc/hosts`:
+  aparece al depender de un DNS que arranca a la vez que el resto.
 
 ## Capturas
 

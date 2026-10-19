@@ -1,0 +1,5 @@
+---
+wordpress_dir: "/home/{{ ansible_user }}/wordpress-docker"
+wordpress_image: wordpress:latest
+wordpress_db_host: "vm4-db:3306"
+wordpress_port: 8080

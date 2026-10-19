@@ -1,0 +1,54 @@
+---
+- name: Crear el usuario del servicio
+  ansible.builtin.user:
+    name: node_exporter
+    system: true
+    shell: /sbin/nologin
+    create_home: false
+
+- name: Consultar la versión instalada
+  ansible.builtin.command: /usr/local/bin/node_exporter --version
+  register: node_exporter_current
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Descargar y descomprimir node_exporter
+  ansible.builtin.unarchive:
+    src: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+    dest: /tmp
+    remote_src: true
+    creates: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
+  when: "('version ' ~ node_exporter_version ~ ' ') not in (node_exporter_current.stdout | default(''))"
+
+- name: Instalar el binario
+  ansible.builtin.copy:
+    src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
+    dest: /usr/local/bin/node_exporter
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0755"
+  when: "('version ' ~ node_exporter_version ~ ' ') not in (node_exporter_current.stdout | default(''))"
+  notify: Reiniciar node_exporter
+
+- name: Instalar el servicio systemd
+  ansible.builtin.template:
+    src: node_exporter.service.j2
+    dest: /etc/systemd/system/node_exporter.service
+    mode: "0644"
+  notify: Reiniciar node_exporter
+
+- name: Habilitar y arrancar node_exporter
+  ansible.builtin.systemd:
+    name: node_exporter
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Abrir el puerto de node_exporter en firewalld
+  ansible.posix.firewalld:
+    port: "{{ node_exporter_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled

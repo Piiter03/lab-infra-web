@@ -1,0 +1,11 @@
+---
+- name: Instalar node_exporter desde los repositorios
+  ansible.builtin.package:
+    name: prometheus-node-exporter
+    state: present
+
+- name: Habilitar y arrancar node_exporter
+  ansible.builtin.service:
+    name: prometheus-node-exporter
+    state: started
+    enabled: true

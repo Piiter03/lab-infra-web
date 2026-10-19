@@ -1,0 +1,6 @@
+---
+- name: Monitorización de las máquinas del laboratorio
+  hosts: lab
+  become: true
+  roles:
+    - node_exporter

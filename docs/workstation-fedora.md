@@ -40,6 +40,16 @@ sudo nmcli connection up host-only
 resolvectl status
 ```
 
+Fedora usa `systemd-resolved`, que no reenvía a un DNS externo los nombres
+de una sola etiqueta (sin punto) como `vm4-db`. Hay que activarlo:
+```bash
+sudo mkdir -p /etc/systemd/resolved.conf.d
+printf '[Resolve]\nResolveUnicastSingleLabel=yes\n' | sudo tee /etc/systemd/resolved.conf.d/lab.conf
+sudo systemctl restart systemd-resolved
+resolvectl flush-caches
+getent hosts vm4-db
+```
+
 Ya no hay entradas del laboratorio en `/etc/hosts`: todos los nombres
 (`vm1-proxy`, `vm2-app`, `vm3-mon`, `vm4-db`, `vm5-dns`) se resuelven por
 DNS.
@@ -101,10 +111,13 @@ DNS.
 - [ ] Instalar Terraform.
 - [ ] Instalar Docker CLI y Azure CLI.
 - [ ] Instalar VS Code (con la extensión Remote-SSH).
-- [ ] Escribir los primeros playbooks de Ansible.
+- [x] Escribir los primeros playbooks de Ansible (ver `docs/ansible.md`).
 
 ## Problemas encontrados
 
+- Sin `ResolveUnicastSingleLabel=yes`, `getent hosts vm4-db` no devolvía
+  nada y `resolvectl` respondía `'vm4-db' not found`, aunque `dig` sí
+  resolvía el nombre. Es la misma restricción que en VM1.
 - Con el DNS interno, `ws` depende de VM5 para resolver los nombres del
   laboratorio. Si VM5 está apagada, el acceso por nombre falla, aunque el
   acceso por IP sigue funcionando.

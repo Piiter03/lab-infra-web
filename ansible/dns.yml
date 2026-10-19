@@ -1,0 +1,6 @@
+---
+- name: Servidor DNS interno
+  hosts: dns
+  become: true
+  roles:
+    - dnsmasq

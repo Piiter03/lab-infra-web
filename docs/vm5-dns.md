@@ -118,7 +118,7 @@ job nuevo en `prometheus.yml`:
 
 | Máquina | Sistema | Método |
 |---|---|---|
-| ws | Fedora | `nmcli`: DNS en `host-only`, `ignore-auto-dns` en la NAT |
+| ws | Fedora | `nmcli`: DNS en `host-only`, `ignore-auto-dns` en la NAT, y `ResolveUnicastSingleLabel=yes` en `systemd-resolved` |
 | VM1 | Ubuntu | Netplan: `nameservers` en la host-only, `use-dns: false` en la NAT, y `ResolveUnicastSingleLabel=yes` en `systemd-resolved` |
 | VM2 | Rocky | `nmcli`, igual que `ws` |
 | VM3 | Debian | `dhcpcd`: `resolv.conf.head` + `nooption domain_name_servers` |

@@ -1,0 +1,7 @@
+---
+# Plantilla. Copia este archivo a vault.yml, rellena los valores reales
+# y cífralo:  ansible-vault encrypt group_vars/lab/vault.yml
+vault_mysql_database: "cambiar"
+vault_mysql_user: "cambiar"
+vault_mysql_password: "cambiar"
+vault_mysql_root_password: "cambiar"

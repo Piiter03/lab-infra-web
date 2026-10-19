@@ -1,0 +1,4 @@
+listen-address={{ dnsmasq_listen | join(',') }}
+bind-interfaces
+no-resolv
+server={{ dnsmasq_upstream }}

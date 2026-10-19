@@ -1,0 +1,28 @@
+---
+- name: Comprobar que la máquina es de la familia RedHat
+  ansible.builtin.assert:
+    that: ansible_facts['os_family'] == 'RedHat'
+    fail_msg: "El rol docker solo está escrito para Rocky Linux (VM2 y VM4)."
+
+- name: Añadir el repositorio oficial de Docker
+  ansible.builtin.get_url:
+    url: "{{ docker_repo_url }}"
+    dest: /etc/yum.repos.d/docker-ce.repo
+    mode: "0644"
+
+- name: Instalar Docker y el plugin de Compose
+  ansible.builtin.dnf:
+    name: "{{ docker_packages }}"
+    state: present
+
+- name: Arrancar Docker y activarlo en el arranque
+  ansible.builtin.systemd:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Permitir a {{ ansible_user }} usar Docker sin sudo
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: true

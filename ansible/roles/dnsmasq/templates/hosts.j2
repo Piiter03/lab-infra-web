@@ -1,0 +1,4 @@
+127.0.0.1       localhost
+{% for h in dnsmasq_hosts %}
+{{ '%-16s' | format(h.ip) }}{{ h.name }}
+{% endfor %}

@@ -1,0 +1,6 @@
+---
+# Los valores reales están en vault.yml (cifrado con ansible-vault).
+mysql_database: "{{ vault_mysql_database }}"
+mysql_user: "{{ vault_mysql_user }}"
+mysql_password: "{{ vault_mysql_password }}"
+mysql_root_password: "{{ vault_mysql_root_password }}"

@@ -1,0 +1,24 @@
+---
+- name: Configuración base del laboratorio
+  hosts: lab
+  become: true
+  vars:
+    common_packages:
+      - curl
+      - htop
+      - tmux
+      - tree
+      - jq
+    vim_package: "{{ 'vim-enhanced' if ansible_facts['os_family'] == 'RedHat' else 'vim' }}"
+
+  tasks:
+    - name: Actualizar la caché de apt (Debian y Ubuntu)
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Instalar los paquetes base
+      ansible.builtin.package:
+        name: "{{ common_packages + [vim_package] }}"
+        state: present

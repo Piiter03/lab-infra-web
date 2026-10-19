@@ -1,0 +1,12 @@
+---
+dnsmasq_listen:
+  - 127.0.0.1
+  - 192.168.56.15
+dnsmasq_upstream: 192.168.235.2
+dnsmasq_hosts:
+  - { ip: 192.168.56.10, name: ws }
+  - { ip: 192.168.56.11, name: vm1-proxy }
+  - { ip: 192.168.56.12, name: vm2-app }
+  - { ip: 192.168.56.13, name: vm3-mon }
+  - { ip: 192.168.56.14, name: vm4-db }
+  - { ip: 192.168.56.15, name: vm5-dns }

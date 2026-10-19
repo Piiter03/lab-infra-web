@@ -1,0 +1,26 @@
+---
+- name: Instalar dnsmasq
+  ansible.builtin.package:
+    name: dnsmasq
+    state: present
+
+- name: Configurar dnsmasq (validando antes de guardar)
+  ansible.builtin.template:
+    src: lab.conf.j2
+    dest: /etc/dnsmasq.d/lab.conf
+    mode: "0644"
+    validate: dnsmasq --test -C %s
+  notify: Reiniciar dnsmasq
+
+- name: Tabla de nombres del laboratorio
+  ansible.builtin.template:
+    src: hosts.j2
+    dest: /etc/hosts
+    mode: "0644"
+  notify: Reiniciar dnsmasq
+
+- name: Habilitar y arrancar dnsmasq
+  ansible.builtin.service:
+    name: dnsmasq
+    state: started
+    enabled: true
