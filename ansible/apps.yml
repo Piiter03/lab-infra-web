@@ -1,12 +1,11 @@
 ---
-# Orden importante: primero la base de datos (VM4), después la aplicación (VM2).
-- name: Base de datos (capa de datos)
+- name: Capa de datos (MariaDB)
   hosts: db
   become: true
   roles:
     - mariadb
 
-- name: WordPress (capa de aplicación)
+- name: Capa de aplicación (WordPress)
   hosts: app
   become: true
   roles:

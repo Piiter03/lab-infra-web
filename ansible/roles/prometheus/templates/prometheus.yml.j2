@@ -1,0 +1,21 @@
+# Gestionado por Ansible (rol prometheus)
+global:
+  scrape_interval: {{ prometheus_scrape_interval }}
+  evaluation_interval: {{ prometheus_evaluation_interval }}
+
+scrape_configs:
+  - job_name: 'prometheus'
+    scrape_interval: 5s
+    scrape_timeout: 5s
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:{{ prometheus_node_port }}']
+{% for host in prometheus_targets %}
+
+  - job_name: '{{ host }}'
+    static_configs:
+      - targets: ['{{ host }}:{{ prometheus_node_port }}']
+{% endfor %}

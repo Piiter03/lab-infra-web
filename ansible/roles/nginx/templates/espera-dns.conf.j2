@@ -1,0 +1,10 @@
+# Gestionado por Ansible (rol nginx)
+# Nginx resuelve vm2-app al arrancar: espera a la red y reintenta si falla.
+[Unit]
+After=network-online.target nss-lookup.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Restart=on-failure
+RestartSec=5

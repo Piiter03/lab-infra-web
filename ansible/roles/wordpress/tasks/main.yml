@@ -1,5 +1,5 @@
 ---
-- name: Crear el directorio del despliegue
+- name: Directorio del proyecto
   ansible.builtin.file:
     path: "{{ wordpress_dir }}"
     state: directory
@@ -7,7 +7,7 @@
     group: "{{ ansible_user }}"
     mode: "0755"
 
-- name: Generar docker-compose.yml
+- name: Archivo docker-compose.yml
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ wordpress_dir }}/docker-compose.yml"
@@ -15,9 +15,7 @@
     group: "{{ ansible_user }}"
     mode: "0644"
 
-# WordPress no necesita la contraseña de root de la base de datos,
-# por eso este .env solo lleva tres variables.
-- name: Generar .env con las credenciales (desde Vault)
+- name: Archivo .env con las credenciales (no se muestra su contenido)
   ansible.builtin.template:
     src: env.j2
     dest: "{{ wordpress_dir }}/.env"

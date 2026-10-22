@@ -1,0 +1,80 @@
+---
+- name: Instalar Nginx y OpenSSL
+  ansible.builtin.apt:
+    name: [nginx, openssl]
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Directorio de certificados
+  ansible.builtin.file:
+    path: "{{ nginx_ssl_dir }}"
+    state: directory
+    mode: "0755"
+
+# Solo se genera si no existe: nunca sustituye el certificado actual.
+- name: Certificado autofirmado
+  ansible.builtin.command: >
+    openssl req -x509 -nodes -days {{ nginx_ssl_days }} -newkey rsa:2048
+    -keyout {{ nginx_ssl_key }} -out {{ nginx_ssl_cert }}
+    -subj "/CN={{ nginx_server_name }}"
+  args:
+    creates: "{{ nginx_ssl_key }}"
+  notify: Validar Nginx
+
+- name: Proteger la clave privada
+  ansible.builtin.file:
+    path: "{{ nginx_ssl_key }}"
+    mode: "0600"
+  when: not ansible_check_mode
+
+- name: Sitio del proxy inverso
+  ansible.builtin.template:
+    src: proxy.j2
+    dest: /etc/nginx/sites-available/proxy
+    mode: "0644"
+    backup: true
+  notify: Validar Nginx
+
+- name: Activar el sitio del proxy
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/proxy
+    dest: /etc/nginx/sites-enabled/proxy
+    state: link
+  notify: Validar Nginx
+
+- name: Desactivar el sitio por defecto
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Validar Nginx
+
+- name: Directorio del drop-in de systemd
+  ansible.builtin.file:
+    path: /etc/systemd/system/nginx.service.d
+    state: directory
+    mode: "0755"
+
+- name: Drop-in para que Nginx espere al DNS en el arranque
+  ansible.builtin.template:
+    src: espera-dns.conf.j2
+    dest: /etc/systemd/system/nginx.service.d/espera-dns.conf
+    mode: "0644"
+  notify: Recargar systemd
+
+- name: Nginx activo y habilitado
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true
+
+- name: Firewall (ufw)
+  community.general.ufw:
+    rule: allow
+    name: "{{ item }}"
+  loop: [OpenSSH, Nginx Full]
+
+- name: Firewall, acceso desde la red del laboratorio
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ nginx_lab_network }}"

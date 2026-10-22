@@ -1,0 +1,17 @@
+---
+# Los dos handlers escuchan el mismo aviso y se ejecutan en este orden:
+# si "nginx -t" falla, la recarga no llega a hacerse.
+- name: Comprobar la configuración de Nginx
+  ansible.builtin.command: nginx -t
+  changed_when: false
+  listen: Validar Nginx
+
+- name: Recargar Nginx
+  ansible.builtin.service:
+    name: nginx
+    state: reloaded
+  listen: Validar Nginx
+
+- name: Recargar systemd
+  ansible.builtin.systemd:
+    daemon_reload: true

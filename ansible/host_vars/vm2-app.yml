@@ -1,0 +1,7 @@
+---
+# Rocky: NetworkManager
+dns_client_method: nmcli
+dns_client_nat_conn: "Wired connection 1"
+dns_client_nat_iface: ens224
+dns_client_host_conn: host-only
+dns_client_host_iface: ens160

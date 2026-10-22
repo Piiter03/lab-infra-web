@@ -1,0 +1,8 @@
+---
+nginx_server_name: vm1-proxy
+nginx_backend: "http://vm2-app:8080"
+nginx_ssl_dir: /etc/nginx/ssl
+nginx_ssl_cert: "{{ nginx_ssl_dir }}/vm1.crt"
+nginx_ssl_key: "{{ nginx_ssl_dir }}/vm1.key"
+nginx_ssl_days: 365
+nginx_lab_network: 192.168.56.0/24

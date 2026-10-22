@@ -1,0 +1,12 @@
+# Gestionado por Ansible (rol grafana)
+apiVersion: 1
+
+providers:
+  - name: laboratorio
+    orgId: 1
+    folder: Laboratorio
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    options:
+      path: {{ grafana_dashboards_dir }}

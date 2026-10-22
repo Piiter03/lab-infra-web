@@ -1,0 +1,7 @@
+---
+# Todas las VMs salvo el propio servidor DNS (VM5).
+- name: Clientes del DNS interno
+  hosts: lab:!dns
+  become: true
+  roles:
+    - dns_client

@@ -1,0 +1,14 @@
+---
+# Debian: dhcpcd genera /etc/resolv.conf
+- name: El DNS interno va el primero en resolv.conf
+  ansible.builtin.copy:
+    dest: /etc/resolv.conf.head
+    content: "nameserver {{ dns_client_server }}\n"
+    mode: "0644"
+  notify: Regenerar resolv.conf
+
+- name: dhcpcd no añade el DNS de la red NAT
+  ansible.builtin.lineinfile:
+    path: /etc/dhcpcd.conf
+    line: nooption domain_name_servers
+  notify: Regenerar resolv.conf

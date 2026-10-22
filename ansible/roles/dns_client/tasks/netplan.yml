@@ -1,0 +1,26 @@
+---
+# Ubuntu: Netplan + systemd-resolved
+- name: Configuración de red con Netplan
+  ansible.builtin.template:
+    src: netplan.yaml.j2
+    dest: "{{ dns_client_netplan_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+    backup: true
+  notify: Aplicar Netplan
+
+- name: Directorio de configuración de systemd-resolved
+  ansible.builtin.file:
+    path: /etc/systemd/resolved.conf.d
+    state: directory
+    mode: "0755"
+
+- name: Permitir nombres de una sola etiqueta (vm4-db, vm2-app...)
+  ansible.builtin.copy:
+    dest: /etc/systemd/resolved.conf.d/lab.conf
+    content: |
+      [Resolve]
+      ResolveUnicastSingleLabel=yes
+    mode: "0644"
+  notify: Reiniciar systemd-resolved

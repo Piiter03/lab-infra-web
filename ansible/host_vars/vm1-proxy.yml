@@ -1,0 +1,6 @@
+---
+# Ubuntu: red con Netplan y resolución con systemd-resolved
+dns_client_method: netplan
+dns_client_nat_iface: ens37
+dns_client_host_iface: ens33
+dns_client_host_address: 192.168.56.11/24

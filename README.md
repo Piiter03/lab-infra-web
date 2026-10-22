@@ -6,6 +6,16 @@ laboratorio de virtualización para practicar administración de sistemas
 Linux y, más adelante, despliegue en la nube con Infraestructura como
 Código.
 
+> **⏸️ Proyecto en pausa (octubre de 2026)**
+>
+> La fase de automatización está terminada: todo el laboratorio se
+> configura con Ansible y se aplica con un solo comando (`site.yml`), con
+> credenciales cifradas en Ansible Vault.
+>
+> Lo dejo en pausa para preparar la certificación **AZ-104 (Microsoft
+> Azure Administrator)**. Al retomarlo, la siguiente fase será desplegar
+> esta misma arquitectura en Azure con Terraform, aplicando lo aprendido.
+
 ## Objetivo del proyecto
 
 Ganar experiencia práctica en sistemas y cloud replicando un entorno
@@ -78,8 +88,8 @@ interna del laboratorio).
 - **DNS interno:** dnsmasq
 - **Seguridad:** SELinux (Rocky), firewalld/ufw
 - **Red:** red interna host-only con IPs fijas y resolución por DNS interno
-- **Automatización:** Ansible (base, DNS, node_exporter, Docker y despliegue de aplicaciones con Vault)
-- **Próximamente:** Terraform (despliegue en Azure)
+- **Automatización:** Ansible (todo el laboratorio: DNS, Nginx, Docker, aplicaciones con Vault, Prometheus y Grafana)
+- **Próximamente:** Terraform (despliegue en Azure, tras la AZ-104)
 
 ## Estado del proyecto
 
@@ -95,12 +105,42 @@ interna del laboratorio).
 - [x] DNS interno (VM5) y migración de todos los clientes
 - [x] Ansible: inventario, configuración base, servidor DNS y node_exporter en las 5 VMs
 - [x] Ansible: Docker y despliegue de WordPress y MariaDB con credenciales en Vault
-- [ ] Ansible: cliente DNS, Nginx y Prometheus como roles
-- [ ] Despliegue en Azure con Terraform
+- [x] Ansible: cliente DNS (con un caso por distribución), Nginx y Prometheus como roles
+- [x] Ansible: Grafana como código y un `site.yml` para aplicar el laboratorio completo
+- [ ] Despliegue en Azure con Terraform *(en pausa hasta completar la AZ-104)*
+
+## Automatización con Ansible
+
+Toda la configuración del laboratorio está también como código en
+[`ansible/`](ansible), y se aplica desde `ws`:
+
+| Playbook | Máquinas | Qué hace |
+|---|---|---|
+| `base.yml` | todas | paquetes comunes |
+| `dns.yml` | VM5 | servidor DNS (dnsmasq) |
+| `dns_client.yml` | VM1-VM4 | uso del DNS interno con `nmcli`, Netplan o `dhcpcd` según la distro |
+| `node_exporter.yml` | todas | métricas para Prometheus |
+| `monitoring.yml` | VM3 | Prometheus (un job por máquina, generado desde el inventario) y Grafana (fuente de datos y dashboard como código) |
+| `proxy.yml` | VM1 | Nginx como proxy inverso con HTTPS |
+| `docker.yml` | VM2, VM4 | Docker CE y Compose |
+| `apps.yml` | VM4, VM2 | MariaDB y WordPress, con las credenciales en Ansible Vault |
+| `site.yml` | todas | todo lo anterior, en orden: el laboratorio completo con un comando |
+
+```bash
+cd ansible
+ansible-playbook <playbook>.yml --check --diff -K --ask-vault-pass   # simulacro
+ansible-playbook <playbook>.yml -K --ask-vault-pass                  # ejecución real
+```
+
+Todos los playbooks son idempotentes (una segunda ejecución da
+`changed=0`), validan la configuración antes de aplicarla (`nginx -t`,
+`promtool`, `dnsmasq --test`) y no guardan ninguna contraseña en texto
+plano. Detalles, comandos y problemas en
+[docs/ansible.md](docs/ansible.md).
 
 ## Documentación por máquina
 
-- [WS - Puesto de trabajo](docs/workstation-fedora.md)
+- [ws - Puesto de trabajo](docs/workstation-fedora.md)
 - [VM1 - Proxy Nginx](docs/vm1-proxy.md)
 - [VM2 - Aplicación (WordPress)](docs/vm2-app.md)
 - [VM3 - Monitorización](docs/vm3-monitorizacion.md)
@@ -119,7 +159,7 @@ interna del laboratorio).
 - Gestión de zonas y `sources` en firewalld (un mismo origen no puede pertenecer a dos zonas a la vez).
 - Despliegue de Prometheus y Grafana para monitorización multi-máquina, incluyendo la instalación manual de `node_exporter` por binario en distros que no lo traen en sus repositorios, y la depuración de un `prometheus.yml` inválido. De ahí salió el hábito de **validar antes de reiniciar** (`promtool check config`, `nginx -t`, `dnsmasq --test`, `netplan try`).
 - Montaje de un DNS interno con dnsmasq y migración de clientes con cuatro métodos distintos. En Ubuntu, `systemd-resolved` **no reenvía los nombres de una sola etiqueta** a un DNS externo salvo que se active `ResolveUnicastSingleLabel=yes`.
-- Automatización con Ansible: roles, plantillas, *handlers*, simulacro (`--check --diff`) e idempotencia, y credenciales con **Ansible Vault**. Un fallo real enseñó que un simulacro limpio no lo garantiza todo (el módulo de Compose no ve un `.env` que aún no se ha escrito), y que un `.env` con variables desplazadas puede pasar meses sin detectarse porque MariaDB solo lo lee al crear la base de datos.
+- Automatización con Ansible de una infraestructura heterogénea: roles, plantillas Jinja2, `host_vars` para las diferencias entre máquinas, *handlers* que validan antes de recargar, simulacro (`--check --diff`) e idempotencia, y credenciales con **Ansible Vault**. Un fallo real enseñó que un simulacro limpio no lo garantiza todo (el módulo de Compose no ve un `.env` que aún no se ha escrito), y que un `.env` con variables desplazadas puede pasar desapercibido porque MariaDB solo lo lee al crear la base de datos.
 - Dependencias de arranque: con el DNS interno, Nginx fallaba al iniciar (`host not found in upstream`) porque resuelve el destino solo al cargar la configuración. Se arregló con un *drop-in* de systemd.
 - Valoración de dependencias de infraestructura: el DNS interno es un punto único de fallo, y se decidió separarlo de la monitorización para evitar una dependencia circular.
 

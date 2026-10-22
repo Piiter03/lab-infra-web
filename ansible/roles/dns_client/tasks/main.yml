@@ -1,0 +1,8 @@
+---
+- name: Comprobar que la máquina tiene un método de DNS definido
+  ansible.builtin.assert:
+    that: dns_client_method in ['nmcli', 'netplan', 'dhcpcd']
+    fail_msg: "Define dns_client_method (nmcli, netplan o dhcpcd) en host_vars/{{ inventory_hostname }}.yml"
+
+- name: Configurar el DNS con el método de la distribución
+  ansible.builtin.include_tasks: "{{ dns_client_method }}.yml"

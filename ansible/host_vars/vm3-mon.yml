@@ -1,0 +1,4 @@
+---
+# Debian: resolv.conf generado por dhcpcd
+dns_client_method: dhcpcd
+dns_client_nat_iface: ens37

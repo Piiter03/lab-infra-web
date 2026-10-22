@@ -1,0 +1,6 @@
+---
+- name: Proxy inverso (capa de presentación)
+  hosts: proxy
+  become: true
+  roles:
+    - nginx

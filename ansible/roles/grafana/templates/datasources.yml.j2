@@ -1,0 +1,17 @@
+# Gestionado por Ansible (rol grafana)
+apiVersion: 1
+
+deleteDatasources:
+{% for ds in grafana_delete_datasources %}
+  - name: {{ ds }}
+    orgId: 1
+{% endfor %}
+
+datasources:
+  - name: prometheus
+    uid: {{ grafana_prometheus_uid }}
+    type: prometheus
+    access: proxy
+    url: {{ grafana_prometheus_url }}
+    isDefault: true
+    editable: false

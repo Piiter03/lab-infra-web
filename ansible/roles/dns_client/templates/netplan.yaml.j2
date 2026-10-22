@@ -1,0 +1,13 @@
+# Gestionado por Ansible (rol dns_client)
+network:
+  version: 2
+  ethernets:
+    {{ dns_client_nat_iface }}:
+      dhcp4: true
+      dhcp4-overrides:
+        use-dns: false
+    {{ dns_client_host_iface }}:
+      dhcp4: false
+      addresses: [{{ dns_client_host_address }}]
+      nameservers:
+        addresses: [{{ dns_client_server }}]

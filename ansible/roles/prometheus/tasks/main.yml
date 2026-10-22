@@ -1,0 +1,26 @@
+---
+- name: Instalar Prometheus
+  ansible.builtin.apt:
+    name: prometheus
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+# promtool valida el archivo antes de sustituir el actual:
+# un YAML roto nunca llega a tumbar el servicio.
+- name: Configuración de Prometheus (validada con promtool)
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: /etc/prometheus/prometheus.yml
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+    validate: promtool check config %s
+  notify: Reiniciar Prometheus
+
+- name: Prometheus activo y habilitado
+  ansible.builtin.service:
+    name: prometheus
+    state: started
+    enabled: true

@@ -1,6 +1,6 @@
 ---
-- name: Docker en las máquinas de aplicación y de datos
-  hosts: app:db
+- name: Docker en las máquinas con contenedores
+  hosts: app,db
   become: true
   roles:
     - docker

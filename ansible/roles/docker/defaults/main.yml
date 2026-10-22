@@ -1,7 +1,8 @@
 ---
-docker_repo_url: https://download.docker.com/linux/rhel/docker-ce.repo
 docker_packages:
   - docker-ce
   - docker-ce-cli
   - containerd.io
   - docker-compose-plugin
+docker_users:
+  - "{{ ansible_user }}"

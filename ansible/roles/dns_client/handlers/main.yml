@@ -1,0 +1,19 @@
+---
+# "device reapply" aplica los cambios sin bajar la interfaz,
+# así no se corta la conexión SSH por la que trabaja Ansible.
+- name: Reaplicar conexión NAT
+  ansible.builtin.command: nmcli device reapply {{ dns_client_nat_iface }}
+
+- name: Reaplicar conexión host-only
+  ansible.builtin.command: nmcli device reapply {{ dns_client_host_iface }}
+
+- name: Aplicar Netplan
+  ansible.builtin.command: netplan apply
+
+- name: Reiniciar systemd-resolved
+  ansible.builtin.systemd:
+    name: systemd-resolved
+    state: restarted
+
+- name: Regenerar resolv.conf
+  ansible.builtin.command: dhcpcd -n {{ dns_client_nat_iface }}

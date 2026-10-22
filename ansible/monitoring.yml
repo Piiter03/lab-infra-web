@@ -1,0 +1,7 @@
+---
+- name: Monitorización
+  hosts: monitor
+  become: true
+  roles:
+    - prometheus
+    - grafana

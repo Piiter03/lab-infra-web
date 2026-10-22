@@ -1,0 +1,7 @@
+---
+prometheus_scrape_interval: 15s
+prometheus_evaluation_interval: 15s
+prometheus_node_port: 9100
+# Máquinas que vigila: todas las del laboratorio salvo la propia VM3,
+# que ya está en el job "node" (localhost).
+prometheus_targets: "{{ groups['lab'] | difference([inventory_hostname]) | sort }}"

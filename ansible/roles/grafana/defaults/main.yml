@@ -1,0 +1,11 @@
+---
+grafana_keyring: /etc/apt/keyrings/grafana.gpg
+grafana_repo: "deb [signed-by={{ grafana_keyring }}] https://apt.grafana.com stable main"
+grafana_prometheus_url: http://localhost:9090
+# Mismo uid que la fuente creada a mano: así el dashboard no pierde los datos.
+grafana_prometheus_uid: eg01glgysiewwb
+grafana_delete_datasources:
+  - graphite
+grafana_dashboards_dir: /var/lib/grafana/dashboards
+grafana_dashboards:
+  - { id: 1860, name: node-exporter-full }

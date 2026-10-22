@@ -1,0 +1,24 @@
+---
+# NetworkManager (Rocky). Se leen los valores actuales y solo se modifican
+# si son distintos, para que la tarea sea idempotente.
+- name: Leer si la conexión NAT ignora el DNS de DHCP
+  ansible.builtin.command: nmcli -g ipv4.ignore-auto-dns connection show "{{ dns_client_nat_conn }}"
+  register: nat_ignore_dns
+  changed_when: false
+  check_mode: false
+
+- name: La conexión NAT no debe usar el DNS de DHCP
+  ansible.builtin.command: nmcli connection modify "{{ dns_client_nat_conn }}" ipv4.ignore-auto-dns yes
+  when: nat_ignore_dns.stdout != 'yes'
+  notify: Reaplicar conexión NAT
+
+- name: Leer el DNS de la conexión host-only
+  ansible.builtin.command: nmcli -g ipv4.dns connection show "{{ dns_client_host_conn }}"
+  register: host_dns
+  changed_when: false
+  check_mode: false
+
+- name: La conexión host-only usa el DNS interno
+  ansible.builtin.command: nmcli connection modify "{{ dns_client_host_conn }}" ipv4.dns {{ dns_client_server }}
+  when: host_dns.stdout != dns_client_server
+  notify: Reaplicar conexión host-only

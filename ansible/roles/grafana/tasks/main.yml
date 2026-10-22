@@ -1,0 +1,72 @@
+---
+- name: Clave del repositorio de Grafana
+  ansible.builtin.shell: >
+    curl -fsSL https://apt.grafana.com/gpg.key | gpg --dearmor -o {{ grafana_keyring }}
+  args:
+    creates: "{{ grafana_keyring }}"
+
+- name: Repositorio de Grafana
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/grafana.list
+    content: "{{ grafana_repo }}\n"
+    mode: "0644"
+
+- name: Instalar Grafana
+  ansible.builtin.apt:
+    name: grafana
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Fuente de datos Prometheus
+  ansible.builtin.template:
+    src: datasources.yml.j2
+    dest: /etc/grafana/provisioning/datasources/lab.yml
+    owner: root
+    group: grafana
+    mode: "0640"
+  notify: Reiniciar Grafana
+
+- name: Proveedor de dashboards
+  ansible.builtin.template:
+    src: dashboards.yml.j2
+    dest: /etc/grafana/provisioning/dashboards/lab.yml
+    owner: root
+    group: grafana
+    mode: "0640"
+  notify: Reiniciar Grafana
+
+- name: Directorio de dashboards
+  ansible.builtin.file:
+    path: "{{ grafana_dashboards_dir }}"
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: "0755"
+
+- name: Descargar los dashboards de grafana.com
+  ansible.builtin.get_url:
+    url: "https://grafana.com/api/dashboards/{{ item.id }}/revisions/latest/download"
+    dest: "{{ grafana_dashboards_dir }}/{{ item.name }}.json"
+    owner: grafana
+    group: grafana
+    mode: "0644"
+    force: false
+  loop: "{{ grafana_dashboards }}"
+  when: not ansible_check_mode
+  notify: Reiniciar Grafana
+
+- name: Enlazar los dashboards con la fuente de datos
+  ansible.builtin.replace:
+    path: "{{ grafana_dashboards_dir }}/{{ item.name }}.json"
+    regexp: '\$\{DS_PROMETHEUS\}'
+    replace: "{{ grafana_prometheus_uid }}"
+  loop: "{{ grafana_dashboards }}"
+  when: not ansible_check_mode
+  notify: Reiniciar Grafana
+
+- name: Grafana activo y habilitado
+  ansible.builtin.service:
+    name: grafana-server
+    state: started
+    enabled: true

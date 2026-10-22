@@ -1,0 +1,10 @@
+---
+# Laboratorio completo, en orden de dependencias.
+- import_playbook: base.yml
+- import_playbook: dns.yml
+- import_playbook: dns_client.yml
+- import_playbook: node_exporter.yml
+- import_playbook: docker.yml
+- import_playbook: apps.yml
+- import_playbook: proxy.yml
+- import_playbook: monitoring.yml
